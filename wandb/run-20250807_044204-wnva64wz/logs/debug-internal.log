@@ -1,0 +1,16 @@
+{"time":"2025-08-07T04:42:04.911917888+08:00","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/export/home2/weijie210/StruQ/wandb/run-20250807_044204-wnva64wz/logs/debug-core.log"}
+{"time":"2025-08-07T04:42:05.361574662+08:00","level":"INFO","msg":"stream: created new stream","id":"wnva64wz"}
+{"time":"2025-08-07T04:42:05.361664443+08:00","level":"INFO","msg":"stream: started","id":"wnva64wz"}
+{"time":"2025-08-07T04:42:05.361720784+08:00","level":"INFO","msg":"writer: Do: started","stream_id":"wnva64wz"}
+{"time":"2025-08-07T04:42:05.361769844+08:00","level":"INFO","msg":"handler: started","stream_id":"wnva64wz"}
+{"time":"2025-08-07T04:42:05.361796205+08:00","level":"INFO","msg":"sender: started","stream_id":"wnva64wz"}
+{"time":"2025-08-07T04:42:05.720035551+08:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-07T04:51:52.344501855+08:00","level":"INFO","msg":"api: retrying HTTP error","status":502,"url":"https://api.wandb.ai/files/self_learning/huggingface/wnva64wz/file_stream","body":"\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n"}
+{"time":"2025-08-07T08:45:37.639485373+08:00","level":"INFO","msg":"stream: closing","id":"wnva64wz"}
+{"time":"2025-08-07T08:45:37.639572174+08:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-07T08:45:37.639677215+08:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-07T08:45:39.422444426+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-07T08:45:39.695644073+08:00","level":"INFO","msg":"handler: closed","stream_id":"wnva64wz"}
+{"time":"2025-08-07T08:45:39.695706314+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":"wnva64wz"}
+{"time":"2025-08-07T08:45:39.695732444+08:00","level":"INFO","msg":"sender: closed","stream_id":"wnva64wz"}
+{"time":"2025-08-07T08:45:39.696254011+08:00","level":"INFO","msg":"stream: closed","id":"wnva64wz"}
