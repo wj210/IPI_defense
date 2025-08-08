@@ -82,7 +82,7 @@ def smart_tokenizer_and_embedding_resize(
     # Initialize the 5 StruQ delimiters with the embeddings of the corresponding textual delimiters
     for i in range(len(SPECIAL_DELM_TOKENS)):
         index = -num_new_tokens+i+1
-        print('Initialize special delimiter token', tokenizer.decode(len(tokenizer) + index), 'from the embedding of', tokenizer.decode(delimiter_init_embed_index_from_text[i]))
+        print('Initialize special delimiter token', tokenizer.decode([len(tokenizer) + index]), 'from the embedding of', tokenizer.decode([delimiter_init_embed_index_from_text[i]]))
         input_embeddings[index] = input_embeddings[delimiter_init_embed_index_from_text[i]]
         output_embeddings[index] = output_embeddings[delimiter_init_embed_index_from_text[i]]
 

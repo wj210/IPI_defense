@@ -1,0 +1,17 @@
+{"time":"2025-08-08T10:49:50.95363246+08:00","level":"INFO","msg":"stream: starting","core version":"0.21.0"}
+{"time":"2025-08-08T10:49:51.201181571+08:00","level":"ERROR","msg":"Failed to load features, feature will default to disabled","error":"api: failed sending: POST https://api.wandb.ai/graphql giving up after 1 attempt(s): Post \"https://api.wandb.ai/graphql\": tls: failed to verify certificate: x509: certificate signed by unknown authority"}
+{"time":"2025-08-08T10:49:51.201285541+08:00","level":"INFO","msg":"stream: created new stream","id":"bndkm2py"}
+{"time":"2025-08-08T10:49:51.201299946+08:00","level":"INFO","msg":"stream: started","id":"bndkm2py"}
+{"time":"2025-08-08T10:49:51.201334382+08:00","level":"INFO","msg":"writer: Do: started","stream_id":"bndkm2py"}
+{"time":"2025-08-08T10:49:51.201347209+08:00","level":"INFO","msg":"sender: started","stream_id":"bndkm2py"}
+{"time":"2025-08-08T10:49:51.201368815+08:00","level":"INFO","msg":"handler: started","stream_id":"bndkm2py"}
+{"time":"2025-08-08T10:49:51.202384834+08:00","level":"WARN","msg":"runupserter: server does not expand metric globs but the x_server_side_expand_glob_metrics setting is set; ignoring"}
+{"time":"2025-08-08T10:49:51.315144639+08:00","level":"ERROR","msg":"runupserter: failed to init run","error":"api: failed sending: POST https://api.wandb.ai/graphql giving up after 1 attempt(s): Post \"https://api.wandb.ai/graphql\": tls: failed to verify certificate: x509: certificate signed by unknown authority"}
+{"time":"2025-08-08T10:49:52.318177893+08:00","level":"INFO","msg":"stream: closing","id":"bndkm2py"}
+{"time":"2025-08-08T10:49:52.318559944+08:00","level":"ERROR","msg":"sender: uploadConfigFile: stream: no run"}
+{"time":"2025-08-08T10:49:52.487676134+08:00","level":"ERROR","msg":"runfiles: CreateRunFiles returned error: api: failed sending: POST https://api.wandb.ai/graphql giving up after 1 attempt(s): Post \"https://api.wandb.ai/graphql\": tls: failed to verify certificate: x509: certificate signed by unknown authority"}
+{"time":"2025-08-08T10:49:52.488483437+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-08T10:49:52.488550478+08:00","level":"INFO","msg":"handler: closed","stream_id":"bndkm2py"}
+{"time":"2025-08-08T10:49:52.488565266+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":"bndkm2py"}
+{"time":"2025-08-08T10:49:52.488580937+08:00","level":"INFO","msg":"sender: closed","stream_id":"bndkm2py"}
+{"time":"2025-08-08T10:49:52.488631141+08:00","level":"INFO","msg":"stream: closed","id":"bndkm2py"}
