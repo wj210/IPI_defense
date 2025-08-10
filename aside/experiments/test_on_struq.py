@@ -480,7 +480,7 @@ def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_mod
     # short_model_name = model_name.replace("/", "_")[len(".._models_"):]
     # save_filename = f"{short_model_name}_s{seed}.json"
     save_dir = '../../results'
-    save_filename = 'Qwen2.5-7B_ASIDE' if 'aside' in model_name.lower() else 'Qwen2.5-7B_ISE'
+    save_filename = 'Qwen3-8B_ASIDE' if 'aside' in model_name.lower() else 'Qwen3-8B_ISE'
     save_path = os.path.join(save_dir, save_filename + '.json')
     # Make sure the directory exists
     os.makedirs(save_dir, exist_ok=True)

@@ -10,8 +10,8 @@ export OMP_NUM_THREADS=8
 REQUIRED_MEMORY=79000  # For example, 70 GB
 REQUIRED_GPUS=1   # Number of GPUs needed
 
-p=PA100q
-w=node12
+p=HPCq
+w=node14
 c=8 # num cpus
 
 
@@ -101,7 +101,7 @@ allocate_gpu_memory() {
 allocate_gpu_memory
 
 srun -p $p -w $w -c $c --verbose --job-name=self_learning --gpus=$num_gpu --pty ./script/nb.sh
-
+# srun -p $p -w $w -c $c --verbose --job-name=self_learning --gpus=$num_gpu bash script/train.sh
 trap cleanup SIGINT
 
 # Check for success.txt

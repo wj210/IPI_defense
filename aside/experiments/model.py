@@ -765,7 +765,34 @@ class Qwen3Base(Qwen3ForCausalLM):
         tokenizer.padding_side = "left"
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
+    
+    # @classmethod
+    # def _customize_tokenizer_and_model(cls, tokenizer, model): # from StruQ
+    #     ## check if the special tokens are already in, if yes then skip
+    #     SPECIAL_DELM_TOKENS = ['[INST]',      '[INPT]', '[RESP]',   '[MARK]', '[COLN]']
+    #     if not all(token in tokenizer.get_vocab() for token in SPECIAL_DELM_TOKENS): 
+    #         num_new_tokens = tokenizer.add_special_tokens({
+    #         'pad_token': '[PAD]',
+    #         'additional_special_tokens': SPECIAL_DELM_TOKENS
+    #         })
+    #         model.resize_token_embeddings(len(tokenizer))
+    #         delimiter_init_embed_index_from_text = [tokenizer.encode(v, add_special_tokens=False)[0] for v in ['instruction', 'input',  'response', '###',    ':']]
+    #         input_embeddings = model.get_input_embeddings().weight.data
+    #         output_embeddings = model.get_output_embeddings().weight.data
+    #         # Initialize the [PAD] token with the mean of all embeddings
+    #         input_embeddings[-num_new_tokens] = input_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
+    #         output_embeddings[-num_new_tokens] = output_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
 
+    #         # Initialize the 5 StruQ delimiters with the embeddings of the corresponding textual delimiters
+    #         for i in range(len(SPECIAL_DELM_TOKENS)):
+    #             index = -num_new_tokens+i+1
+    #             print('Initialize special delimiter token', tokenizer.decode([len(tokenizer) + index]), 'from the embedding of', tokenizer.decode([delimiter_init_embed_index_from_text[i]]))
+    #             input_embeddings[index] = input_embeddings[delimiter_init_embed_index_from_text[i]]
+    #             output_embeddings[index] = output_embeddings[delimiter_init_embed_index_from_text[i]]
+
+    #         tokenizer.bos_token = '<s>'
+    #         tokenizer.bos_token_id = tokenizer.convert_tokens_to_ids('<s>')
+        
 
 class Qwen3ISE(ISEMixin, Qwen3Base):
     """Qwen model with ISE baseline implementation."""

@@ -2,17 +2,24 @@ from utils.utils import *
 import torch
 from collections import defaultdict
 
-def contrast_activations(model,clean,corrupt,avg_before_contrast=True):
-    clean_acts = {}
-    corrupt_acts = {}
-    with torch.no_grad(), model.trace(clean) as tracer:
-        for l in range(len(model.model.layers)):
-            clean_acts[l] = model.model.layers[l].output[0][:,-1].save()
-    clear_mem()
-    with torch.no_grad(), model.trace(corrupt) as tracer:
-        for l in range(len(model.model.layers)):
-            corrupt_acts[l] = model.model.layers[l].output[0][:,-1].save()
-    clear_mem()
+def contrast_activations(model,clean,corrupt,bz =-1 ,avg_before_contrast=True):
+    clean_acts = defaultdict(list)
+    corrupt_acts = defaultdict(list)
+    if bz == -1:
+        bz = len(clean)
+    for i in tqdm(range(0,len(clean),bz),total = len(clean)//bz):
+        batch_clean = clean[i:i+bz]
+        batch_corrupt = corrupt[i:i+bz]
+        with torch.no_grad(), model.trace(batch_clean) as tracer:
+            for l in range(len(model.model.layers)):
+                clean_acts[l].append(model.model.layers[l].output[0][:,-1].save())
+        clear_mem()
+        with torch.no_grad(), model.trace(batch_corrupt) as tracer:
+            for l in range(len(model.model.layers)):
+                corrupt_acts[l].append(model.model.layers[l].output[0][:,-1].save())
+        clear_mem()
+    clean_acts = {l:torch.cat(v,0) for l,v in clean_acts.items()}
+    corrupt_acts = {l:torch.cat(v,0) for l,v in corrupt_acts.items()}
     directions = {}
     for l in range(len(model.model.layers)):
         if avg_before_contrast:

@@ -149,7 +149,8 @@ class AlpacaDataset(Dataset):
             segment_ids = torch.hstack((segment_ids, torch.Tensor([[(1 + len(text_sequences)) % 2]]))).long() 
 
         if not self.printed_input: 
-            print("Input Text Sequence:\n", text_sequences, input_ids, segment_ids, attention_mask)
+            print(f"Input Text Sequence:\n{text_sequences}")
+            print (f'Prompt : {self.handler.tokenizer.decode(input_ids.squeeze(0).tolist())}')
             #print("Shapes", input_ids.shape, segment_ids.shape, attention_mask.shape)
             self.printed_input = True
         if segment_ids is not None:
@@ -448,6 +449,7 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
     max_length = hparams["max_length"]
     train_dataset = AlpacaDataset(train_data, template_info, handler, max_length=max_length)
     eval_dataset = AlpacaDataset(eval_data, template_info, handler, max_length=max_length)
+
     data_collator = CustomDataCollator(
         tokenizer=handler.tokenizer,
         mlm=False

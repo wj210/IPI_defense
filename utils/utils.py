@@ -139,7 +139,7 @@ def ablate_act(act,hook,vec,add=False,pos =None):
                 act =  act +( proj * v_norm)
     return act
 
-def add_act(act,hook,vec,scale,tok_pos=None): # is a list of (start,end) for each sample
+def add_act(act,vec,scale,tok_pos=None): # is a list of (start,end) for each sample
     if tok_pos is None:
         return act + scale*vec
     else:
@@ -353,7 +353,7 @@ class Probe(torch.nn.Module):
     def __init__(self, in_dim, dtype: torch.dtype = torch.float32,out_dim = 2):
         super().__init__()
         self.out_dim = out_dim
-        self.net =  torch.nn.Linear(in_dim, out_dim, bias=True, dtype=dtype)
+        self.net =  torch.nn.Linear(in_dim, out_dim, bias=False, dtype=dtype)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x) if self.out_dim > 1 else self.net(x).squeeze(-1)
@@ -432,9 +432,11 @@ def test_probe(
     probe,
     acts,
     labels,
+    grp_labels = None,
     bz = 64,
 ):
     mean_acc = []
+    grp_acc = defaultdict(list)
     for batch_id in range(0, len(acts), bz):
         batch_acts = acts[batch_id:batch_id + bz]
         batch_labels = labels[batch_id:batch_id + bz]
@@ -443,5 +445,12 @@ def test_probe(
         preds = logits.argmax(-1) if logits.ndim == 2 else (logits > 0.0)
         acc = (preds == batch_labels.to(preds)).float()
         mean_acc.append(acc.mean().item())
-    
-    return np.mean(mean_acc)
+        if grp_labels is not None:
+            batch_grp_labels = grp_labels[batch_id:batch_id + bz]
+            for grp_label,a in zip(batch_grp_labels,acc):
+                grp_acc[grp_label].append(a.item())
+
+    if grp_labels is not None:
+        return np.mean(mean_acc), {k: np.mean(v) for k, v in grp_acc.items()}
+    else:
+        return np.mean(mean_acc)

@@ -1,0 +1,15 @@
+{"time":"2025-08-09T03:23:22.503877906+08:00","level":"INFO","msg":"stream: starting","core version":"0.20.1","symlink path":"/export/home2/weijie210/StruQ/wandb/run-20250809_032322-ombg49cg/logs/debug-core.log"}
+{"time":"2025-08-09T03:23:22.954573023+08:00","level":"INFO","msg":"stream: created new stream","id":"ombg49cg"}
+{"time":"2025-08-09T03:23:22.954670845+08:00","level":"INFO","msg":"stream: started","id":"ombg49cg"}
+{"time":"2025-08-09T03:23:22.954696755+08:00","level":"INFO","msg":"writer: Do: started","stream_id":"ombg49cg"}
+{"time":"2025-08-09T03:23:22.954741706+08:00","level":"INFO","msg":"sender: started","stream_id":"ombg49cg"}
+{"time":"2025-08-09T03:23:22.954840977+08:00","level":"INFO","msg":"handler: started","stream_id":"ombg49cg"}
+{"time":"2025-08-09T03:23:23.558217453+08:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-08-09T07:50:30.436503892+08:00","level":"INFO","msg":"stream: closing","id":"ombg49cg"}
+{"time":"2025-08-09T07:50:30.436590643+08:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-08-09T07:50:30.436685394+08:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-08-09T07:50:31.908839036+08:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-08-09T07:50:32.180563446+08:00","level":"INFO","msg":"handler: closed","stream_id":"ombg49cg"}
+{"time":"2025-08-09T07:50:32.180651617+08:00","level":"INFO","msg":"writer: Close: closed","stream_id":"ombg49cg"}
+{"time":"2025-08-09T07:50:32.180731798+08:00","level":"INFO","msg":"sender: closed","stream_id":"ombg49cg"}
+{"time":"2025-08-09T07:50:32.18158677+08:00","level":"INFO","msg":"stream: closed","id":"ombg49cg"}

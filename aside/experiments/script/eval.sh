@@ -10,8 +10,8 @@ else
 fi
 
 
-model_name=Qwen2.5-7B_ASIDE
+model_name=Qwen3-8B_ASIDE
 attack=('naive' 'ignore' 'escape_deletion' 'escape_separation' 'completion_other' 'completion_othercmb' 'completion_real' 'completion_realcmb' 'completion_close_2hash' 'completion_close_1hash' 'completion_close_0hash' 'completion_close_upper' 'completion_close_title' 'completion_close_nospace' 'completion_close_nocolon' 'completion_close_typo' 'completion_close_similar' 'hackaprompt')
 # attack=('hackaprompt')
 
-python test_on_struq.py --model $model_name --attack "${attack[@]}" --batch_size 64 --embedding_type 'forward_rot' --base_model 'Qwen2.5-7B'
+python test_on_struq.py --model $model_name --attack "${attack[@]}" --batch_size 64 --embedding_type 'forward_rot' --base_model 'Qwen3-8B'

@@ -135,6 +135,7 @@ def load_single_emb_model_and_tokenizer(
         quantization_config=bnb_config if quant_4bit else None,
         attn_implementation="flash_attention_2",
         low_cpu_mem_usage=True,
+        # use_safetensors=True,
     )
 
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
@@ -148,6 +149,9 @@ def load_single_emb_model_and_tokenizer(
 
     if hasattr(model_cls, "_customize_tokenizer"):
         model_cls._customize_tokenizer(tokenizer, model_name_or_path)
+    
+    # if hasattr(model_cls, "_customize_tokenizer_and_model"): # StruQ
+    #     model_cls._customize_tokenizer_and_model(tokenizer, model)
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -1385,8 +1389,8 @@ class CustomModelHandler:
 
         CONFIG_CLASS_REGISTRY = {
             "llama": CustomLlamaConfig,
-            "qwen": CustomQwenConfig,
-            # "qwen3": CustomQwen3Config,
+            "qwen2": CustomQwenConfig,
+            "qwen3": CustomQwen3Config,
             "mistral": CustomMistralConfig,
         }
 
@@ -1397,16 +1401,16 @@ class CustomModelHandler:
                 "ise": LlamaISE,
                 "forward_rot": LlamaForwardRot,
             },
-            "qwen": {
+            "qwen2": {
                 "single_emb": Qwen2ForCausalLM,
                 "ise": QwenISE,
                 "forward_rot": QwenForwardRot,
             },
-            # "qwen3": {
-            #     "single_emb": Qwen3ForCausalLM,
-            #     "ise": Qwen3ISE,
-            #     "forward_rot": Qwen3ForwardRot,
-            # },
+            "qwen3": {
+                "single_emb": Qwen3ForCausalLM,
+                "ise": Qwen3ISE,
+                "forward_rot": Qwen3ForwardRot,
+            },
             "mistral": {
                 "single_emb": MistralBase,
                 "ise": MistralISE,
@@ -1505,7 +1509,8 @@ def format_model_input(
         in CustomModelHandler initialization. This ensures proper routing for
         instruction-data separation methods.
     """
-  
+    
+    # if 'Qwen' not in tokenizer.__class__.__name__: # additionally added to make it follow the same logic as StruQ
     if tokenizer.chat_template is not None:
         chat = [
             {"role": "system", "content": system_instruction},
@@ -1514,9 +1519,15 @@ def format_model_input(
         if assistant_message is not None:
             chat.append({"role": "assistant", "content": assistant_message})
 
-        chat = tokenizer.apply_chat_template(
-            chat, tokenize=False, add_generation_prompt=assistant_message is None
-        )
+        if 'Qwen' not in tokenizer.__class__.__name__:
+            chat = tokenizer.apply_chat_template(
+                chat, tokenize=False, add_generation_prompt=assistant_message is None
+            )
+        else:
+            chat = tokenizer.apply_chat_template(
+                chat, tokenize=False, add_generation_prompt=assistant_message is None, enable_thinking=False
+            )
+
     else:
         chat = system_instruction + "\n" + user_instruction + "\n"
         if assistant_message is not None:
@@ -1524,7 +1535,18 @@ def format_model_input(
         else:
             chat += "Response:"
     sep_sequence = "Input:\n"
+    # else:
+    #     chat = system_instruction + user_instruction
+    #     if assistant_message is not None:
+    #         assistant_message += tokenizer.eos_token
+    #         chat += assistant_message
+    #     sep_sequence = "[MARK] [INPT][COLN]" # Qwen uses a different separator
+    
     sep_sequence_start = chat.find(sep_sequence)
+    assert sep_sequence_start != -1, (
+        f"Separator '{sep_sequence}' not found in chat. "
+        "Ensure the chat format matches the expected template."
+    )
     if split_chat:
         chat_pieces = [
             chat[:sep_sequence_start],

@@ -1,6 +1,4 @@
-Qwen2.5-7B_Base/
-Qwen2.5-7B_StruQ/
-aside/experiments/Qwen2.5-7B_ASIDE/
+aside/experiments/Qwen3-8B_ASIDE/
 aside/experiments/models/
 aside/experiments/data/train_data/
 aside/experiments/interp/
@@ -8,3 +6,6 @@ script/
 scripts/
 Gemma2-2B_SpclSpclSpcl_NaiveCompletion/
 Gemma2-2B_SpclSpclSpcl_None/
+Qwen3-8B_SpclSpclSpcl_NaiveCompletion/
+Qwen3-8B_SpclSpclSpcl_None/
+mem.py
