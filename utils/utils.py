@@ -205,6 +205,7 @@ def nnsight_generate(model,prompts,gen_kwargs,vec=None,intervention = None,inter
         intervene_layers = range(len(model.model.layers)) # ablate all layers by default
 
     inp_len = len(model.tokenizer(prompts,padding='longest',return_tensors='pt').input_ids[0])
+
     with torch.no_grad(), model.generate(prompts,**gen_kwargs) as gen:
         if intervention:
             for ablate_l in intervene_layers:

@@ -3,91 +3,109 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def html_color_for_score(score,min_val=None,max_val=None):
-    if min_val is not None:
-        norm = (score - min_val) / (max_val - min_val)
-        norm = np.clip(norm, 0, 1)  # avoid overflow
+def _clamp01(x):
+    return max(0.0, min(1.0, float(x)))
+
+def _lerp(a, b, t):
+    return a + (b - a) * t
+
+def _rgb(r, g, b):
+    return f"rgb({int(round(r))},{int(round(g))},{int(round(b))})"
+
+def _seq_blue_to_red(v, vmin, vmax):
+    """Sequential: vmin(blue) → vmax(red)."""
+    if vmax == vmin:
+        t = 0.5
     else:
-        norm = score
-    # Linear green (1) to red (0)
-    red = int(255 * (1 - norm))
-    green = int(255 * norm)
-    color = f'rgb({red},{green},0)'
-    return color
+        t = _clamp01((v - vmin) / (vmax - vmin))
+    # blue (0,0,255) -> red (255,0,0)
+    r = _lerp(0,   255, t)
+    g = _lerp(255,   0, t)
+    b = 0
+    return _rgb(r, g, b)
 
-def html_colored_tokens_with_colorbar(tokens, scores, num_ticks=6, normalize=False):
+def _div_bwr(v): 
+    """Diverging Blue–White–Red for v in [-1, 1]."""
+    v = max(-1.0, min(1.0, float(v)))
+    if v >= 0:
+        # white (255,255,255) -> red (255,0,0)
+        t = v  # 0..1
+        r = 255
+        g = _lerp(255, 0, t)
+        b = _lerp(255, 0, t)
+    else:
+        # blue (0,0,255) -> white (255,255,255) as v goes -1..0
+        t = -v  # 0..1
+        r = _lerp(0, 255, t)
+        g = 255
+        b = _lerp(0, 255, t)
+    return _rgb(r, g, b)
 
-    def separate_normalize(values):
-        values = np.array(values, dtype=float)
-        normed = np.zeros_like(values)
+def _separate_normalize(values):
+    """Map raw values to [-1,1] by scaling positives by max_pos and negatives by |min_neg|."""
+    values = np.asarray(values, dtype=float)
+    out = np.zeros_like(values)
+    pos = values > 0
+    neg = values < 0
+    if np.any(pos):
+        mpos = values[pos].max()
+        if mpos > 0:
+            out[pos] = values[pos] / mpos
+    if np.any(neg):
+        mneg = values[neg].min()  # most negative
+        if mneg < 0:
+            out[neg] = values[neg] / abs(mneg)
+    return out  # in [-1,1]
 
-        pos_mask = values > 0
-        neg_mask = values < 0
+def html_colored_tokens_with_colorbar(tokens, scores, num_ticks=6, normalize=False, width_px=420):
+    scores = np.asarray(scores, dtype=float)
 
-        if np.any(pos_mask):
-            max_pos = values[pos_mask].max()
-            normed[pos_mask] = values[pos_mask] / max_pos  # scale to 0→1
-
-        if np.any(neg_mask):
-            min_neg = values[neg_mask].min()  # most negative number
-            normed[neg_mask] = values[neg_mask] / abs(min_neg)  # scale to 0→-1
-
-        # zeros remain zero
-        return normed
-
-    # Prepare ticks and min/max
     if normalize:
-        scores = separate_normalize(scores)  # <-- new normalization
-        min_val, max_val = -1, 1
+        nscores = _separate_normalize(scores)  # in [-1,1]
+        min_val, max_val = -1.0, 1.0
         ticks = np.linspace(min_val, max_val, num_ticks)
+        # gradient: blue -> white -> red
+        gradient = "linear-gradient(to right, rgb(0,255,0), rgb(255,0,0))"
+        # color fn on normalized values
+        color_fn = lambda s: _div_bwr(s)
+        # label values are the normalized ticks
+        tick_vals_for_labels = ticks
     else:
-        min_val = min(scores)
-        max_val = max(scores)
+        min_val = float(np.min(scores))
+        max_val = float(np.max(scores))
+        if min_val == max_val:
+            # fall back to symmetric tiny span to avoid /0 while keeping colors stable
+            min_val -= 1e-9
+            max_val += 1e-9
         ticks = np.linspace(min_val, max_val, num_ticks)
-        
-    # Tick labels
+        # gradient: blue -> red
+        gradient = "linear-gradient(to right, rgb(0,255,0), rgb(255,0,0))"
+        color_fn = lambda s: _seq_blue_to_red(s, min_val, max_val)
+        tick_vals_for_labels = ticks
+
     tick_labels = ''.join(
         f'<span style="display:inline-block;position:absolute;left:{i/(num_ticks-1)*100}%;'
         f'transform:translateX(-50%);font-size:11px;">{tick:.2f}</span>'
-        for i, tick in enumerate(ticks)
+        for i, tick in enumerate(tick_vals_for_labels)
     )
 
-    # Colorbar gradient
-    if normalize:
-        gradient = "linear-gradient(to right, rgb(0,0,255), rgb(255,255,255), rgb(255,0,0))"
-    else:
-        gradient = "linear-gradient(to right, rgb(0,255,0), rgb(255,0,0), rgb(255,255,0))"
-
     colorbar_html = f"""
-    <div style="position: relative; width: 360px; height: 22px; margin-bottom: 6px; margin-top: 6px;
+    <div style="position: relative; width: {width_px}px; height: 22px; margin: 6px 0;
         background: {gradient};
         border-radius: 5px; border:1px solid #888;">
       <div style="position: absolute; width: 100%; top: 22px; left: 0;">{tick_labels}</div>
     </div>
-    <div style="width: 360px; text-align:center; margin-bottom:10px; font-size:12px; color:#333;">score</div>
+    <div style="width: {width_px}px; text-align:center; margin-bottom:10px; font-size:12px; color:#333;">score</div>
     """
 
-    # Function for normalized red/blue coloring
-    def score_to_color(score):
-        if score < 0:
-            intensity = int(255 * (1 - abs(score) / abs(min_val)))
-            return f"rgb({intensity},{intensity},255)"  # white to blue
-        elif score > 0:
-            intensity = int(255 * (1 - score / max_val))
-            
-            return f"rgb(255,{intensity},{intensity})"  # red to white
-        else:
-            return "rgb(255,255,255)"  # white
-
-    # Token coloring
     if normalize:
         colored = [
-            f'<span style="background:{score_to_color(s)}; color:black; padding:2px 6px; margin:2px; border-radius:4px;">{t}</span>'
-            for t, s in zip(tokens, scores)
+            f'<span style="background:{color_fn(s)}; color:black; padding:2px 6px; margin:2px; border-radius:4px;">{t}</span>'
+            for t, s in zip(tokens, nscores)
         ]
     else:
         colored = [
-            f'<span style="background:{html_color_for_score(s, min_val, max_val)}; color:black; padding:2px 6px; margin:2px; border-radius:4px;">{t}</span>'
+            f'<span style="background:{color_fn(s)}; color:black; padding:2px 6px; margin:2px; border-radius:4px;">{t}</span>'
             for t, s in zip(tokens, scores)
         ]
 

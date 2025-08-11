@@ -47,26 +47,28 @@ def load_model_and_tokenizer(model_path, tokenizer_path=None, device="cuda:0", *
     return model, tokenizer
 
 
-def test_model_output(llm_input, model, tokenizer,bz=1,avg=True):
-    model.generation_config.max_new_tokens = tokenizer.model_max_length
-    model.generation_config.do_sample = False
-    model.generation_config.temperature = 0.0
-
+def test_model_output(llm_input, model, tokenizer,bz=1,avg=True,max_new_tokens=512,is_nnsight=False):
     in_response = []
     begin_with = []
     outputs = []
+    gen_kwargs = {
+        'pad_token_id':tokenizer.pad_token_id,
+        'eos_token_id':tokenizer.eos_token_id,
+        'do_sample':False,
+        'max_new_tokens':max_new_tokens
+    }
     for i in tqdm(range(0,len(llm_input),bz),total=len(llm_input)//bz, desc='Testing'):
         input_ids = tokenizer(llm_input[i:i+bz], return_tensors='pt', padding='longest', truncation=True).to(model.device)
-        outp = tokenizer.batch_decode(
-            model.generate(
+        if not is_nnsight:
+            out =  model.generate(
                 input_ids.input_ids,
                 attention_mask=input_ids.attention_mask,
-                generation_config=model.generation_config,
-                pad_token_id=tokenizer.pad_token_id,
-                eos_token_id=tokenizer.eos_token_id,
-                do_sample = False,
-            )[:,input_ids.input_ids.shape[1]:]
-        )
+                **gen_kwargs
+            )
+        else:
+            with model.generate(input_ids,**gen_kwargs):
+                out = model.generator.output.save()
+        outp = tokenizer.batch_decode(out[:,input_ids.input_ids.shape[1]:])
         outp = [o[:o.find(tokenizer.eos_token)] if tokenizer.eos_token in o else o for o in outp]
 
         sample_in_response = [TEST_INJECTED_WORD.lower() in o.strip().lower() for o in outp]
@@ -79,7 +81,7 @@ def test_model_output(llm_input, model, tokenizer,bz=1,avg=True):
         return np.mean(in_response), np.mean(begin_with), outputs
     else:
         return in_response, begin_with, outputs
-
+        
 def recursive_filter(s):
     filtered = False
     while not filtered:
