@@ -10,3 +10,4 @@ Gemma2-2B_SpclSpclSpcl_None/
 Qwen3-8B_SpclSpclSpcl_NaiveCompletion/
 Qwen3-8B_SpclSpclSpcl_None/
 mem.py__pycache__/
+mem.py
