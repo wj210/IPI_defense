@@ -4,7 +4,7 @@ import os
 import json
 from tqdm import tqdm
 
-model_dir = "models/Qwen3-8B-Base/ise/train_checkpoints/SFTv70/from_inst_run_ISE/last"
+model_dir = "models/Qwen3-8B-Adv/forward_rot/train_checkpoints/Adv_SFTv70/from_inst_run_ASIDE/last"
 index_path = os.path.join(model_dir, "pytorch_model.bin.index.json")
 
 # Load index JSON
