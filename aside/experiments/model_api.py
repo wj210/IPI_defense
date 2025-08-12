@@ -1166,6 +1166,7 @@ class CustomModelHandler:
         max_new_tokens=1024,
         do_sample=False,
         temperature=None,
+        return_inputs_only=False
     ):
         """
         Main batch inference API for efficient model evaluation.
@@ -1282,6 +1283,11 @@ class CustomModelHandler:
         attention_mask_batch = torch.cat(padded_attention_masks, dim=0).to(
             self.model.device
         )
+        if return_inputs_only: # return tokenized inputs only
+            return {'input_ids': input_ids_batch,
+                    'attention_mask': attention_mask_batch,
+                    'segment_ids': segment_ids_batch,}
+            
         # if not self.debug_printed:
         #     self.debug_printed = True
         #     print("sys instr", system_instructions[0])

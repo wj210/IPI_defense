@@ -423,6 +423,7 @@ def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_mod
                                 )
     print(f"Moving the model to {device}")
     handler.model.to(device)
+    exit('EXITING!!!!')
 
     with open("data/prompt_templates.json", "r") as f:
         templates = json.load(f)
@@ -435,12 +436,6 @@ def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_mod
     torch.manual_seed(0) # set to 0
     np.random.seed(0)
 
-    handler = CustomModelHandler(
-        model_name, base_model, base_model, model_name, None,
-        0, embedding_type=embedding_type,
-        load_from_checkpoint=True,
-    )
-    handler.model.to(device)
 
     for a in attacks:
         print(f"Testing model on attack {a}")
@@ -480,7 +475,10 @@ def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_mod
     # short_model_name = model_name.replace("/", "_")[len(".._models_"):]
     # save_filename = f"{short_model_name}_s{seed}.json"
     save_dir = '../../results'
-    save_filename = 'Qwen3-8B_ASIDE' if 'aside' in model_name.lower() else 'Qwen3-8B_ISE'
+    if 'Adv' not in model_name:
+        save_filename = 'Qwen3-8B_ASIDE' if '8b-aside' in model_name.lower() else 'Qwen3-8B_ISE'
+    else:
+        save_filename = 'Qwen3-8B_ASIDE_Adv' if '8b-aside' in model_name.lower() else 'Qwen3-8B_ISE_Adv'
     save_path = os.path.join(save_dir, save_filename + '.json')
     # Make sure the directory exists
     os.makedirs(save_dir, exist_ok=True)
