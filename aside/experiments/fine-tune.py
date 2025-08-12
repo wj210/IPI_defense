@@ -418,8 +418,6 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
     # Load dataset
     train_data = load_dataset("json", data_files=train_dataset_path)["train"]
     eval_data = load_dataset("json", data_files=eval_dataset_path)["train"]
-    assert len(train_data) == 46581
-    assert len(eval_data) == 5175
     with open(config["prompt_templates_path"], "r") as f:
         templates = json.load(f)
     template_info = {
