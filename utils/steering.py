@@ -1,6 +1,7 @@
 from utils.utils import *
 import torch
 from collections import defaultdict
+from tqdm import tqdm
 
 def contrast_activations(model,clean,corrupt,bz =-1 ,avg_before_contrast=True):
     clean_acts = defaultdict(list)
