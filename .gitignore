@@ -1,5 +1,5 @@
-aside/experiments/Qwen3-8B_ASIDE/
-aside/experiments/Qwen3-8B_ISE/
+aside/experiments/Qwen3-8B-ASIDE/
+aside/experiments/Qwen3-8B-ISE/
 aside/experiments/models/
 aside/experiments/data/train_data/
 aside/experiments/interp/

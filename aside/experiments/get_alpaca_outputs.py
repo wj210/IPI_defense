@@ -40,8 +40,8 @@ import random
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoConfig
 
-from .model_api import CustomModelHandler, format_prompt
-from .model import CustomLLaMA, CustomLlamaConfig
+from model_api import CustomModelHandler, format_prompt
+from model import CustomLLaMA, CustomLlamaConfig
 
 torch.backends.cuda.enable_flash_sdp(False)
 torch.backends.cuda.enable_mem_efficient_sdp(False)
@@ -89,6 +89,7 @@ def generate_results_batch(handler, use_input, remove_tags, max_new_tokens, temp
         empty_data = ""
         for example in batch_data:
             instruction = example["instruction"]
+
             data = example["input"] if use_input else empty_data
 
             # special for 
@@ -100,10 +101,9 @@ def generate_results_batch(handler, use_input, remove_tags, max_new_tokens, temp
 
 
             instruction_text = format_prompt(instruction, template, "system")
-            data_text = format_prompt(empty_data, template, "user")
+            data_text = format_prompt(data, template, "user")
             inst_list.append(instruction_text)
             data_list.append(data_text)
-
 
         batch_responses, batch_inps = handler.call_model_api_batch(
             inst_list, data_list, max_new_tokens=max_new_tokens,
@@ -230,7 +230,7 @@ def get_model_outputs(data_path, data_size, use_input, remove_tags, model_name, 
     handler.model.to(device)
     handler.model.config.use_cache = True
 
-    with open("../../data/prompt_templates.json", "r") as f:
+    with open("data/prompt_templates.json", "r") as f:
         templates = json.load(f)
     template = templates[0]
 
@@ -239,9 +239,9 @@ def get_model_outputs(data_path, data_size, use_input, remove_tags, model_name, 
 
     # Get parent dir of data_path
     #short_model_name = model_name.split("/")[-1]
-    model_name = model_name.split("models/")[1]
-    short_model_name = model_name.replace("/", "_")
-    save_filename = f"{short_model_name}_l{data_size}_s{seed}.json"
+    # model_name = model_name.split("models/")[1]
+    # short_model_name = model_name.replace("/", "_")
+    save_filename = f"{'ASIDE' if '8b-aside' in model_name.lower() else 'ISE'}.json"
     save_path = os.path.join(save_dir, save_filename)
     # Make sure the directory exists
     os.makedirs(save_dir, exist_ok=True)
@@ -276,7 +276,6 @@ if __name__ == "__main__":
 
     if args.save_dir == "":
         args.save_dir = os.path.dirname(args.data_path)
-
     get_model_outputs(
         args.data_path, args.data_size, args.use_input, args.remove_tags, args.model, args.max_new_tokens, args.embedding_type, args.base_model, args.batch_size, args.save_dir, args.seed
     )
