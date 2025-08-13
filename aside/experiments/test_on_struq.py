@@ -423,7 +423,6 @@ def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_mod
                                 )
     print(f"Moving the model to {device}")
     handler.model.to(device)
-    exit('EXITING!!!!')
 
     with open("data/prompt_templates.json", "r") as f:
         templates = json.load(f)

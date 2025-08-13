@@ -29,6 +29,42 @@ def contrast_activations(model,clean,corrupt,bz =-1 ,avg_before_contrast=True):
             directions[l] = (corrupt_acts[l]- clean_acts[l]).mean(0)
     return directions
 
+
+def contrast_act_native(model,clean,corrupt,bz =-1 ,avg_before_contrast=True):
+    clean_acts = defaultdict(list)
+    corrupt_acts = defaultdict(list)
+    n = len(clean['input_ids'])
+    if bz == -1:
+        bz = n
+    num_layers = len(model.layers)
+    clean_hi = HookedIntervention(model, intervention_fn=None, layers_to_edit=num_layers, capture_post=True)
+    corrupt_hi = HookedIntervention(model, intervention_fn=None, layers_to_edit=num_layers, capture_post=True)
+    for i in tqdm(range(0,n,bz),total = n//bz):
+        batch_clean = {k: v[i:i+bz] for k,v in clean.items()}
+        batch_corrupt = {k: v[i:i+bz] for k,v in corrupt.items()}
+        with torch.no_grad():
+            with clean_hi.activate():
+                _ = v_model(**batch_clean)
+            with corrupt_hi.activate():
+                _ = v_model(**batch_corrupt)
+        for l in range(num_layers):
+            clean_acts[l].append(clean_hi.io.post[l][:,-1])
+            corrupt_acts[l].append(corrupt_hi.io.post[l][:,-1])
+        ## empty it out
+        clean_hi.io.clear()
+        corrupt_hi.io.clear()
+        torch.cuda.empty_cache()
+       
+    clean_acts = {l:torch.cat(v,0).to(model.device) for l,v in clean_acts.items()}
+    corrupt_acts = {l:torch.cat(v,0).to(model.device) for l,v in corrupt_acts.items()}
+    directions = {}
+    for l in range(len(model.model.layers)):
+        if avg_before_contrast:
+            directions[l] = corrupt_acts[l].mean(0) - clean_acts[l].mean(0)
+        else:
+            directions[l] = (corrupt_acts[l]- clean_acts[l]).mean(0)
+    return directions
+
 def get_steering_vec(model,corrupt,clean,bz=-1,return_separate_vectors = False): # if return_separate_vectors, return corrupt_vec and clean vec as well.
     if bz == -1:
         bz = len(corrupt)
