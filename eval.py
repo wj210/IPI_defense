@@ -332,11 +332,7 @@ def test():
     for a in args.attack:
         if a == 'gcg': test_gcg(args); continue
         data = jload(args.data_path)
-        if os.path.exists(result_dir):
-            benign_response_name = result_dir + '/predictions_on_' + os.path.basename(args.data_path)
-        else:
-            os.makedirs(result_dir + '-log', exist_ok=True)
-            benign_response_name = result_dir + '-log/predictions_on_' + os.path.basename(args.data_path)
+        benign_response_name = result_dir + '/alpaca_eval.json'
         
         if not os.path.exists(benign_response_name) or a != 'none':
             llm_input = form_llm_input(
@@ -366,16 +362,17 @@ def test():
                     data[i]['output'] = outputs[i][0]
                     data[i]['generator'] = result_dir
                 jdump(data, benign_response_name)
-            print('\nRunning AlpacaEval on', benign_response_name, '\n')
-            try:
-                cmd = 'export OPENAI_CLIENT_CONFIG_PATH=%s\nalpaca_eval --model_outputs %s --reference_outputs %s' % (args.openai_config_path, benign_response_name, args.data_path)
-                alpaca_log = subprocess.check_output(cmd, shell=True, text=True)
-            except subprocess.CalledProcessError: alpaca_log = 'None'
-            found = False
-            for item in [x for x in alpaca_log.split(' ') if x != '']:
-                if result_dir.split('/')[-1] in item: found = True; continue
-                if found: begin_with = in_response = item; break # actually is alpaca_eval_win_rate
-            if not found: begin_with = in_response = -1
+                exit()
+            # print('\nRunning AlpacaEval on', benign_response_name, '\n')
+            # try:
+            #     cmd = 'export OPENAI_CLIENT_CONFIG_PATH=%s\nalpaca_eval --model_outputs %s --reference_outputs %s' % (args.openai_config_path, benign_response_name, args.data_path)
+            #     alpaca_log = subprocess.check_output(cmd, shell=True, text=True)
+            # except subprocess.CalledProcessError: alpaca_log = 'None'
+            # found = False
+            # for item in [x for x in alpaca_log.split(' ') if x != '']:
+            #     if result_dir.split('/')[-1] in item: found = True; continue
+            #     if found: begin_with = in_response = item; break # actually is alpaca_eval_win_rate
+            # if not found: begin_with = in_response = -1
         
         if os.path.exists(result_dir): summary_path = result_dir + '/summary.tsv'
         else: summary_path = result_dir + '-log/summary.tsv'
