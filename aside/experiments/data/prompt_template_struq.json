@@ -1,0 +1,8 @@
+[
+  {
+    "system": "Below is an instruction that describes a task, paired with an input that provides further context.\nWrite a response that appropriately completes the request.\n\n[MARK] [INST][COLN]\n{}\n\n",
+    "user": "[MARK] [INPT][COLN]\n{}\n\n",
+    "output": "[MARK] [RESP][COLN]\n{}\n"
+  }
+
+]

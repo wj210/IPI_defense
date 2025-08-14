@@ -137,53 +137,59 @@ def form_llm_input(data, injection_method, prompt_format, apply_defensive_filter
 
 def none(d_item): return d_item
 
-def naive(d_item):
-    d_item['input'] += ' ' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+def add_attack(sample,attack,ood=False):
+    if ood:
+        sample['input'] = attack +  sample['input']  + attack
+    else:
+        sample['input'] += attack
+    return sample
 
-def ignore(d_item):
-    d_item['input'] += ' ' + np.random.choice(IGNORE_ATTACK_SENTENCES['test']).format(injected_prompt=TEST_INJECTED_PROMPT)
-    return d_item
+def naive(d_item,ood=False):
+    attack = " "+ TEST_INJECTED_PROMPT.capitalize()
+    return add_attack(d_item, attack, ood)
 
-def escape_deletion(d_item):
+def ignore(d_item,ood=False):
+    attack = " " + np.random.choice(IGNORE_ATTACK_SENTENCES['test']).format(injected_prompt=TEST_INJECTED_PROMPT)
+    return add_attack(d_item, attack, ood)
+
+def escape_deletion(d_item,ood=False):
     char = (r'\b' if np.random.rand() < 0.5 else r'\r') * len(d_item['instruction'] + d_item['input'] + ' ' * 10)
-    d_item['input'] += char + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    attack = char + TEST_INJECTED_PROMPT.capitalize()
+    return add_attack(d_item, attack, ood)
 
-def escape_separation(d_item):
+def escape_separation(d_item,ood=False):
     char = ('\n' if np.random.rand() < 0.5 else '\t') * np.random.choice(range(10))
-    d_item['input'] += char + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    attack = char + TEST_INJECTED_PROMPT.capitalize()
+    return add_attack(d_item, attack, ood)
 
-def completion_real(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_real(d_item, ood=False):
+    attack = '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0] + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_realcmb(d_item):
+def completion_realcmb(d_item, ood=False):
     char = ('\n' if np.random.rand() < 0.5 else '\t') * np.random.choice(range(10))
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n' + char + '\n' + \
+    attack = '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n' + char + '\n' + \
                                 DELIMITERS['TextTextText'][0] + '\n' + np.random.choice(IGNORE_ATTACK_SENTENCES['test']).format(injected_prompt=TEST_INJECTED_PROMPT)
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_real_chinese(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_real_chinese(d_item, ood=False):
+    attack= '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0] + '\n' + TEST_INJECTED_PROMPT_CHINESE.capitalize()
-    #d_item['input'] += DELIMITERS['SpclSpclSpcl'][2] + d_item['output'][1:] + DELIMITERS['SpclSpclSpcl'][0] + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
 
-def completion_real_spanish(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n\n' + \
+    return add_attack(d_item, attack, ood)
+
+def completion_real_spanish(d_item,ood=False):
+    attack = '\n\n' + DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0] + '\n' + TEST_INJECTED_PROMPT_SPANISH.capitalize()
-    #d_item['input'] += DELIMITERS['SpclSpclSpcl'][2] + d_item['output'][1:] + DELIMITERS['SpclSpclSpcl'][0] + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_real_base64(d_item):
+def completion_real_base64(d_item, ood=False):
     injected_prompt = DELIMITERS['TextTextText'][2] + '\n' + d_item['output'][1:] + '\n\n' + \
                       DELIMITERS['TextTextText'][0] + '\n' + TEST_INJECTED_PROMPT.capitalize()
     injected_prompt = base64.b64encode(injected_prompt.encode()).decode()
-    d_item['input'] += '\n\n' + injected_prompt
-    return d_item
+    attack = '\n\n' + injected_prompt
+    return add_attack(d_item, attack, ood)
 
 def completion_other(d_item): 
     d_item['input'] = format_with_other_delimiters(completion_real(d_item)['input'], test=True)
@@ -193,50 +199,50 @@ def completion_othercmb(d_item):
     d_item['input'] = format_with_other_delimiters(completion_realcmb(d_item)['input'], test=True)
     return d_item
 
-def completion_close_2hash(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2].replace(TEXTUAL_DELM_TOKENS[3], TEXTUAL_DELM_TOKENS[3][:2]) + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_2hash(d_item,ood=False):
+    attack = '\n\n' + DELIMITERS['TextTextText'][2].replace(TEXTUAL_DELM_TOKENS[3], TEXTUAL_DELM_TOKENS[3][:2]) + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0].replace(TEXTUAL_DELM_TOKENS[3], TEXTUAL_DELM_TOKENS[3][:2]) + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_close_1hash(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2].replace(TEXTUAL_DELM_TOKENS[3], TEXTUAL_DELM_TOKENS[3][:1]) + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_1hash(d_item,ood=False):
+    attack = '\n\n' + DELIMITERS['TextTextText'][2].replace(TEXTUAL_DELM_TOKENS[3], TEXTUAL_DELM_TOKENS[3][:1]) + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0].replace(TEXTUAL_DELM_TOKENS[3], TEXTUAL_DELM_TOKENS[3][:1]) + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
 def completion_close_0hash(d_item):
     d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2].replace(TEXTUAL_DELM_TOKENS[3] + ' ', '') + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0].replace(TEXTUAL_DELM_TOKENS[3] + ' ', '') + '\n' + TEST_INJECTED_PROMPT.capitalize()
     return d_item
 
-def completion_close_upper(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2].upper() + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_upper(d_item,ood=False):
+    attack= '\n\n' + DELIMITERS['TextTextText'][2].upper() + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0].upper() + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_close_title(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2].title() + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_title(d_item,ood=False):
+    attack = '\n\n' + DELIMITERS['TextTextText'][2].title() + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0].title() + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)  
 
-def completion_close_nospace(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2].replace(' ', '') + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_nospace(d_item,ood=False):
+    attack= '\n\n' + DELIMITERS['TextTextText'][2].replace(' ', '') + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0].replace(' ', '') + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_close_nocolon(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['TextTextText'][2].replace(':', '') + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_nocolon(d_item,ood=False):
+    attack= '\n\n' + DELIMITERS['TextTextText'][2].replace(':', '') + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['TextTextText'][0].replace(':', '') + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_close_typo(d_item):
+def completion_close_typo(d_item,ood=False):
     def make_typo(s):
         alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
         ind = np.random.choice(range(len(s)))
         while s[ind] not in alphabet: ind = np.random.choice(range(len(s)))
         return s[:ind] + np.random.choice(alphabet) + s[ind+1:]
-    d_item['input'] += '\n\n' + make_typo(DELIMITERS['TextTextText'][2]) + '\n' + d_item['output'][1:] + '\n\n' + \
+    attack = '\n\n' + make_typo(DELIMITERS['TextTextText'][2]) + '\n' + d_item['output'][1:] + '\n\n' + \
                                 make_typo(DELIMITERS['TextTextText'][0]) + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
 def completion_close_similar(d_item):
     inst = np.random.choice(['destruction', 'education', 'teaching', 'instru', 'construction', 'instruct'])#, 'instructionsruction'])
@@ -251,25 +257,25 @@ def completion_close_similar(d_item):
                                     DELIMITERS['TextTextText'][0].replace(DELIMITERS['TextTextText'][2][len(TEXTUAL_DELM_TOKENS[3])+1:], inst) + '\n' + TEST_INJECTED_PROMPT.capitalize()
     return d_item
 
-def completion_close_ownlower(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['SpclSpclSpcl'][2].lower() + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_ownlower(d_item,ood=False):
+    attack= '\n\n' + DELIMITERS['SpclSpclSpcl'][2].lower() + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['SpclSpclSpcl'][0].lower() + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_close_owntitle(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['SpclSpclSpcl'][2].title() + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_owntitle(d_item,ood=False):
+    attack= '\n\n' + DELIMITERS['SpclSpclSpcl'][2].title() + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['SpclSpclSpcl'][0].title() + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_close_ownhash(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['SpclSpclSpcl'][2].replace('[', '#') + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_ownhash(d_item,ood=False):
+    attack= '\n\n' + DELIMITERS['SpclSpclSpcl'][2].replace('[', '#') + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['SpclSpclSpcl'][0].replace(']', '#') + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
-def completion_close_owndouble(d_item):
-    d_item['input'] += '\n\n' + DELIMITERS['SpclSpclSpcl'][2].replace('[', '[[') + '\n' + d_item['output'][1:] + '\n\n' + \
+def completion_close_owndouble(d_item,ood=False):
+    attack= '\n\n' + DELIMITERS['SpclSpclSpcl'][2].replace('[', '[[') + '\n' + d_item['output'][1:] + '\n\n' + \
                                 DELIMITERS['SpclSpclSpcl'][0].replace(']', ']]') + '\n' + TEST_INJECTED_PROMPT.capitalize()
-    return d_item
+    return add_attack(d_item, attack, ood)
 
 def hackaprompt(prompt_format,return_dict=False):
     llm_input = []
@@ -297,6 +303,7 @@ def test_parser():
     parser.add_argument('--openai_config_path', type=str, default='data/openai_configs.yaml')
     parser.add_argument("--sample_ids", type=int, nargs="+", default=None, help='Sample ids to test in GCG, None for testing all samples')
     parser.add_argument('--bz', type=int, default=32, help='Batch size for testing')
+    parser.add_argument('--ood', action = 'store_true')
     return parser.parse_args()
 
 def load_lora_model(model_name_or_path, device='0', load_model=True):
@@ -329,15 +336,18 @@ def test():
 
     result_dir = f'results/{args.model_name_or_path}'
     os.makedirs(result_dir, exist_ok=True)
+    
+    non_ood_attacks = ['none', 'hackaprompt', 'completion_other', 'completion_othercmb', 'completion_close_0hash', 'completion_close_similar']
     for a in args.attack:
         if a == 'gcg': test_gcg(args); continue
+        if args.ood and a in non_ood_attacks: continue
         data = jload(args.data_path)
         benign_response_name = result_dir + '/alpaca_eval.json'
         
         if not os.path.exists(benign_response_name) or a != 'none':
             llm_input = form_llm_input(
                 data, 
-                eval(a), 
+                partial(eval(a),ood=args.ood), 
                 PROMPT_FORMAT[frontend_delimiters], 
                 apply_defensive_filter=not (training_attacks == 'None' and len(args.model_name_or_path.split('/')[-1].split('_')) == 4),
                 defense=args.defense
@@ -348,9 +358,9 @@ def test():
         if a != 'none': # evaluate security
             # print(f"\n{a} success rate {in_response} / {begin_with} (in-response / begin_with) on {args.model_name_or_path}, delimiters {frontend_delimiters}, training-attacks {training_attacks}, zero-shot defense {args.defense}\n")
             if os.path.exists(result_dir):
-                log_path = result_dir + '/' + a + '-' + args.defense + '-' + TEST_INJECTED_WORD + '.csv'
+                log_path = result_dir + '/' + a + '-' + args.defense + '-' + TEST_INJECTED_WORD + f'{"_ood" if args.ood else ""}.csv'
             else:
-                log_path = result_dir + '-log/' + a + '-' + args.defense + '-' + TEST_INJECTED_WORD + '.csv'
+                log_path = result_dir + '-log/' + a + '-' + args.defense + '-' + TEST_INJECTED_WORD + f'{"_ood" if args.ood else ""}.csv'
             with open(log_path, "w") as outfile:
                 writer = csv.writer(outfile)
                 writer.writerows([[llm_input[i], s[0], s[1]] for i, s in enumerate(outputs)])
@@ -374,8 +384,7 @@ def test():
             #     if found: begin_with = in_response = item; break # actually is alpaca_eval_win_rate
             # if not found: begin_with = in_response = -1
         
-        if os.path.exists(result_dir): summary_path = result_dir + '/summary.tsv'
-        else: summary_path = result_dir + '-log/summary.tsv'
+        summary_path = result_dir + f'/summary_{"_ood" if args.ood else ""}.tsv'
         if not os.path.exists(summary_path):
             with open(summary_path, "w") as outfile: outfile.write("attack\tin-response\tbegin-with\tdefense\n")
         with open(summary_path, "a") as outfile: outfile.write(f"{a}\t{in_response}\t{begin_with}\t{args.defense}_{TEST_INJECTED_WORD}\n")

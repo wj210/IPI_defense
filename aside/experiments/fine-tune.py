@@ -56,10 +56,24 @@ from model_api import *
 import torch.distributed as dist
 from torch.nn.utils.rnn import pad_sequence
 
-from deepspeed.utils.zero_to_fp32 import convert_zero_checkpoint_to_fp32_state_dict
+# from deepspeed.utils.zero_to_fp32 import convert_zero_checkpoint_to_fp32_state_dict
 from embeddings_init import generate_isoclinic_rotation_matrix
 
+def setup_dist(backend="nccl"):
+    # Only initialize if launched by torchrun
+    if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+        local_rank = int(os.environ.get("LOCAL_RANK", 0))
+        torch.cuda.set_device(local_rank)
+        dist.init_process_group(backend=backend, init_method="env://")
+        return True
+    return False
 
+def rank0_print(*args, **kwargs):
+    if dist.is_available() and dist.is_initialized():
+        if dist.get_rank() == 0:
+            print(*args, **kwargs)
+    else:
+        print(*args, **kwargs)
 
 def merge_zero_shards_and_save(checkpoint_dir):
     """
@@ -381,9 +395,10 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
     if dist.get_rank() == 0:
         print(config)
         print("\n", config["models"][emb_type]["pure_models"])
+    # rank0_print(config)
+    # rank0_print("\n", config["models"][emb_type]["pure_models"])
 
     pure_model_info = config["models"][emb_type]["pure_models"][model_ix]
-    checkpoint_to_load_to = pure_model_info["checkpoint_to_load_to"]
     checkpoint_to_load_from = pure_model_info["checkpoint_to_load_from"]
     tokenizer_path = config["tokenizer_path"]
     instruct_model_path = pure_model_info.get("instruct_model_path", None)
@@ -394,9 +409,8 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
     assert "eval_dataset_path" in config.keys(), "Update Config to new format"
     eval_dataset_path = config["eval_dataset_path"]
     train_version = config["training_version"]
-    model_type = "from_inst" if (model_ix == 0) else "from_base"
-    output_dir = checkpoint_to_load_to + f"/train_checkpoints/{train_version}/{model_type}_run_{run_number}"
-
+    output_dir = os.path.join(args.output_dir,f'{model_family}_{run_number}_{train_version}')
+    
     # Include hyperparams in run name
     run_name = f"{train_version}/{pure_model_info['name']}_train_{hparams['train_type']}_{train_version}_run={run_number}_alpha={hparams['rotation_alpha']}"
 
@@ -511,16 +525,16 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
 
     # Save the trained model and tokenizer
     print("Custom impl., saving last checkpoint")
-    final_checkpoint_path = os.path.join(output_dir, "last")
-    trainer.save_model(final_checkpoint_path)
-    merge_zero_shards_and_save(
-        checkpoint_dir=final_checkpoint_path
+    trainer.save_model(output_dir)
+    # trainer.tokenizer.save_pretrained(output_dir)
+    merge_zero_shards_and_save( # dont need this
+        checkpoint_dir=output_dir
     )
     # Update config with new checkpoint info
     new_checkpoint_info = {
         "desc": f"{pure_model_info['desc']} trained with {train_version}",
         "name": f"{pure_model_info['name']}_{train_version}",
-        "checkpoint_path": final_checkpoint_path,
+        "checkpoint_path": output_dir,
         "instruct_model_path": instruct_model_path,
         "data_model_path": instruct_model_path,
         "chat_template_path": chat_template_path,
@@ -587,7 +601,7 @@ if __name__ == "__main__":
     parser.add_argument("--activation_checkpointing", type=bool, default=False,
                         help="Whether to use gradient checkpointing.")
     parser.add_argument("--remove_unused_columns", type=bool, default=False, help="Remove unused columns in dataset.")
-    parser.add_argument("--report_to", type=list, default=["none"],
+    parser.add_argument("--report_to", type=str, default='none',
                         help="Reporting framework (e.g., wandb, tensorboard).")
     parser.add_argument("--embedding_init", type=str, default=None, choices=[None, "copy", "rot_ind", "rot_isoclinic"],
                         help="Embedding initialization.")
@@ -606,7 +620,6 @@ if __name__ == "__main__":
     parser.add_argument("--post_init_rotation", type=str2bool, default=False, help="Rotate embedding after initialization (normally used when loading from checkpoint).")
 
     parser.add_argument("--gradual_rot", type=str2bool, default=False, help="Use gradual rotation every step of training during 1st epoch")
-
     # Parse the arguments
     args = parser.parse_args()
 
@@ -619,4 +632,5 @@ if __name__ == "__main__":
     train_version = user_hparams.pop("train_version")
     if args.local_rank != -1:
         torch.distributed.init_process_group(backend="nccl", init_method="env://")
+    # setup_dist()
     main(model_family, emb_type, train_version, model_ix, run_number, user_hparams)
