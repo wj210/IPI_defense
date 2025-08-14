@@ -15,6 +15,7 @@ from config import IGNORE_ATTACK_SENTENCES, PROMPT_FORMAT, DEFAULT_TOKENS, DELIM
 from struq import format_with_other_delimiters, _tokenize_fn, jload, jdump
 from train import smart_tokenizer_and_embedding_resize
 from tqdm import tqdm
+from functools import partial
 
 
 def load_model_and_tokenizer(model_path, tokenizer_path=None, device="cuda:0", **kwargs):

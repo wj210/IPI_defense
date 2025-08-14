@@ -16,7 +16,7 @@ output_dir="/dataset/common/huggingface/model" # change to place to store large 
 export WANDB_API_KEY="4d0cfb6b964e4092b544eaa50ffa07ae36cc5249"
 export WANDB_PROJECT="IPI"
 
-deepspeed --num_gpus=4 fine-tune.py \
+deepspeed --num_gpus=4 --master_port=29509 fine-tune.py \
 --model_family llama_3.1_8b \
 --train_version SFTv110 \
 --emb_type forward_rot \
@@ -47,7 +47,7 @@ deepspeed --num_gpus=4 fine-tune.py \
 --output_dir $output_dir \
 --report_to wandb \
 
-deepspeed --num_gpus=4 fine-tune.py \
+deepspeed --num_gpus=4 --master_port=25509 fine-tune.py \
 --model_family llama_3.1_8b \
 --train_version SFTv110 \
 --emb_type ise \

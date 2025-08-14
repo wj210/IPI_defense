@@ -9,15 +9,16 @@ else
   echo "cuda_visible_devices.txt file not found."
 fi
 
+model_dir="/dataset/common/huggingface/model" # set location of model here
 
-model_name=Qwen3-8B-ASIDE_Adv
+model_name=Qwen3-8B-ASIDE
 attack=('naive' 'ignore' 'escape_deletion' 'escape_separation' 'completion_other' 'completion_othercmb' 'completion_real' 'completion_realcmb' 'completion_close_2hash' 'completion_close_1hash' 'completion_close_0hash' 'completion_close_upper' 'completion_close_title' 'completion_close_nospace' 'completion_close_nocolon' 'completion_close_typo' 'completion_close_similar' 'hackaprompt')
 # attack=('hackaprompt')
 
-python test_on_struq.py --model $model_name --attack "${attack[@]}" --batch_size 64 --embedding_type 'forward_rot' --base_model 'Qwen3-8B'
+python test_on_struq.py --model "$model_dir/$model_name" --attack "${attack[@]}" --batch_size 64 --embedding_type 'forward_rot' --base_model 'Qwen3-8B' --ood True
 
-model_name=Qwen3-8B-ISE_Adv
+model_name=Qwen3-8B-ISE
 attack=('naive' 'ignore' 'escape_deletion' 'escape_separation' 'completion_other' 'completion_othercmb' 'completion_real' 'completion_realcmb' 'completion_close_2hash' 'completion_close_1hash' 'completion_close_0hash' 'completion_close_upper' 'completion_close_title' 'completion_close_nospace' 'completion_close_nocolon' 'completion_close_typo' 'completion_close_similar' 'hackaprompt')
 # attack=('hackaprompt')
 
-python test_on_struq.py --model $model_name --attack "${attack[@]}" --batch_size 64 --embedding_type 'ise' --base_model 'Qwen3-8B'
+python test_on_struq.py --model "$model_dir/$model_name" --attack "${attack[@]}" --batch_size 64 --embedding_type 'ise' --base_model 'Qwen3-8B' --ood True

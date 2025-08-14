@@ -392,11 +392,14 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
     config_path = f"./configs/config_{model_family}_{train_version}.json"
     config = load_config(config_path)
 
-    if dist.get_rank() == 0:
-        print(config)
-        print("\n", config["models"][emb_type]["pure_models"])
-    # rank0_print(config)
-    # rank0_print("\n", config["models"][emb_type]["pure_models"])
+    if hparams['no_deepspeed']:
+        rank0_print(config)
+        rank0_print("\n", config["models"][emb_type]["pure_models"])
+    else:
+        if dist.get_rank() == 0:
+            print(config)
+            print("\n", config["models"][emb_type]["pure_models"])
+    
 
     pure_model_info = config["models"][emb_type]["pure_models"][model_ix]
     checkpoint_to_load_from = pure_model_info["checkpoint_to_load_from"]
@@ -494,7 +497,7 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
         prediction_loss_only=hparams["prediction_loss_only"],
         bf16=hparams["bf16"],
         remove_unused_columns=hparams["remove_unused_columns"],
-        deepspeed="deepspeed_config.json", 
+        deepspeed="deepspeed_config.json" if not hparams['no_deepspeed'] else None,
         report_to=hparams["report_to"],
         metric_for_best_model=None,
         gradient_checkpointing=True,  
@@ -526,8 +529,10 @@ def main(model_family: str, emb_type: str, train_version: str, model_ix: int, ru
     # Save the trained model and tokenizer
     print("Custom impl., saving last checkpoint")
     trainer.save_model(output_dir)
-    # trainer.tokenizer.save_pretrained(output_dir)
-    merge_zero_shards_and_save( # dont need this
+    # if args.no_deepspeed:
+    #     trainer.tokenizer.save_pretrained(output_dir)
+    # else:
+    merge_zero_shards_and_save( 
         checkpoint_dir=output_dir
     )
     # Update config with new checkpoint info
@@ -620,6 +625,7 @@ if __name__ == "__main__":
     parser.add_argument("--post_init_rotation", type=str2bool, default=False, help="Rotate embedding after initialization (normally used when loading from checkpoint).")
 
     parser.add_argument("--gradual_rot", type=str2bool, default=False, help="Use gradual rotation every step of training during 1st epoch")
+    parser.add_argument("--no_deepspeed", default = False,type = bool)
     # Parse the arguments
     args = parser.parse_args()
 
@@ -630,7 +636,10 @@ if __name__ == "__main__":
     model_ix = user_hparams.pop("model_ix")
     run_number = user_hparams.pop("run_number")
     train_version = user_hparams.pop("train_version")
-    if args.local_rank != -1:
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
-    # setup_dist()
+    if args.no_deepspeed:
+        setup_dist()
+    else:
+        if args.local_rank != -1:
+            torch.distributed.init_process_group(backend="nccl", init_method="env://")
+    
     main(model_family, emb_type, train_version, model_ix, run_number, user_hparams)

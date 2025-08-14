@@ -49,6 +49,7 @@ from model import CustomLLaMA, CustomLlamaConfig
 from collections import defaultdict
 from eval import *
 from copy import deepcopy
+from functools import partial
 
 DOMAIN_TYPES = ["id", "ood"]
 ATTACK_TYPES = ["naive", "ignore", "escape_separation", "completion_real"]
@@ -353,7 +354,7 @@ def test_model_on_struq_single(data, attack, handler, template, batch_size):
     return attack_success_rate
 
 
-def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_model, batch_size, save_dir, seed_list):
+def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_model, batch_size, save_dir, seed_list,ood=False):
     """
     Comprehensive StruQ evaluation across multiple seeds for statistical robustness.
     
@@ -435,15 +436,23 @@ def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_mod
     torch.manual_seed(0) # set to 0
     np.random.seed(0)
 
+    non_ood_attacks = ['none', 'hackaprompt', 'completion_other', 'completion_othercmb', 'completion_close_0hash', 'completion_close_similar']
 
     for a in attacks:
         print(f"Testing model on attack {a}")
+        if ood and a in non_ood_attacks:
+            continue
         if a == 'hackaprompt': # hackaprompt is a special case
             eval_data = eval(a)(None,True)
         else:
-            eval_data = data
+            eval_data = deepcopy(data)
 
-        success_rate = test_model_on_struq_single(eval_data, eval(a) if a != 'hackaprompt' else a, handler, template, batch_size)
+        if ood:
+            a = partial(eval(a),ood=ood)
+        else:
+            a = eval(a)
+
+        success_rate = test_model_on_struq_single(eval_data, a, handler, template, batch_size)
         print(f"Attack success rate: {success_rate}")
         results[a] = success_rate
         
@@ -478,7 +487,7 @@ def test_model_on_struq(data_path, attacks, model_name, embedding_type, base_mod
         save_filename = 'Qwen3-8B_ASIDE' if '8b-aside' in model_name.lower() else 'Qwen3-8B_ISE'
     else:
         save_filename = 'Qwen3-8B_ASIDE_Adv' if '8b-aside' in model_name.lower() else 'Qwen3-8B_ISE_Adv'
-    save_path = os.path.join(save_dir, save_filename + '.json')
+    save_path = os.path.join(save_dir, save_filename + f'{"_ood" if ood else ""}.json')
     # Make sure the directory exists
     os.makedirs(save_dir, exist_ok=True)
 
@@ -525,6 +534,7 @@ if __name__ == "__main__":
 
 
     parser.add_argument('--model', type=str, required=True, help='Path to the model')
+    parser.add_argument('--ood', type=bool, default = False, help='train ood attacks')
     parser.add_argument('--embedding_type', type=str, required=True, help='Type of embedding used in the model', choices=['single_emb', 'double_emb', "forward_rot", "ise"])
     parser.add_argument('--base_model', type=str, default=None, help='Path to the base model')
     parser.add_argument('--batch_size', type=int, default=16, help='Batch size for the model')
@@ -542,6 +552,6 @@ if __name__ == "__main__":
         args.save_dir = os.path.dirname(data_path)
 
     test_model_on_struq(
-        data_path, args.attack, args.model, args.embedding_type, args.base_model, args.batch_size, args.save_dir, seed_list
+        data_path, args.attack, args.model, args.embedding_type, args.base_model, args.batch_size, args.save_dir, seed_list,ood=args.ood
     )
 

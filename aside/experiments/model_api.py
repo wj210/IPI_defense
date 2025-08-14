@@ -69,6 +69,7 @@ def load_single_emb_model_and_tokenizer(
     rotation_direction=None,
     learned_rotation=None,
     gradual_rotation=None,
+    is_struq_format=False
 ):
     """
     Load model and tokenizer for single embedding approaches (vanilla, ISE, ASIDE).
@@ -155,6 +156,10 @@ def load_single_emb_model_and_tokenizer(
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    if 'StruQ' in model_cls.__class__.__name__: # for formatting
+        tokenizer.is_struq = True
+    else:
+        tokenizer.is_struq = False
 
     model.config.eos_token_id = tokenizer.eos_token_id
     model.config.bos_token_id = tokenizer.bos_token_id
@@ -248,6 +253,7 @@ class CustomModelHandler:
         model_dtype=torch.bfloat16,
         rank=None,
         post_init_rotation=False,
+        is_struq=False,
     ) -> None:
         """
         Initialize the model handler with specified configuration.
@@ -306,7 +312,9 @@ class CustomModelHandler:
         self.debug_printed = False
         if access_token:
             login(token=access_token)
-        self._setup_hf_model()  # Stores Hugging Face models and tokenizers
+        if self.checkpoint_path is not None and 'StruQ' in self.checkpoint_path: # for trained model, set it true
+            is_struq = True
+        self._setup_hf_model(is_struq)  # Stores Hugging Face models and tokenizers
 
     def get_template_parameters(self, template_type):
         """
@@ -1371,7 +1379,7 @@ class CustomModelHandler:
 
         return responses, model_inputs_for_logging
 
-    def _setup_hf_model(self) -> None:
+    def _setup_hf_model(self,is_struq=False) -> None:
         """
         Initialize the HuggingFace model and tokenizer with proper configuration.
         
@@ -1421,6 +1429,10 @@ class CustomModelHandler:
                 "single_emb": MistralBase,
                 "ise": MistralISE,
                 "forward_rot": MistralForwardRot,
+            },
+            'qwen3_struq': {
+                "ise": Qwen3ISE_StruQ,
+                "forward_rot": Qwen3ForwardRot_StruQ,
             }
         }
 
@@ -1430,9 +1442,13 @@ class CustomModelHandler:
                 model_name = model
         if model_name is None:
             raise ValueError("Unknown model")
+        
 
         config_cls = CONFIG_CLASS_REGISTRY.get(model_name)
-        model_cls = MODEL_CLASS_REGISTRY[model_name].get(self.embedding_type)
+        if is_struq: # just formatting of input/response
+            model_cls = MODEL_CLASS_REGISTRY[model_name +'_struq'].get(self.embedding_type) 
+        else:
+            model_cls = MODEL_CLASS_REGISTRY[model_name].get(self.embedding_type) 
         if config_cls is None or model_cls is None:
             raise ValueError("Unsupported (model, embed_style)")
 
@@ -1516,37 +1532,37 @@ def format_model_input(
         instruction-data separation methods.
     """
     
-    # if 'Qwen' not in tokenizer.__class__.__name__: # additionally added to make it follow the same logic as StruQ
-    if tokenizer.chat_template is not None:
-        chat = [
-            {"role": "system", "content": system_instruction},
-            {"role": "user", "content": user_instruction},
-        ]
-        if assistant_message is not None:
-            chat.append({"role": "assistant", "content": assistant_message})
+    if not tokenizer.is_struq: # additionally added to make it follow the same logic as StruQ
+        if tokenizer.chat_template is not None:
+            chat = [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": user_instruction},
+            ]
+            if assistant_message is not None:
+                chat.append({"role": "assistant", "content": assistant_message})
 
-        if 'Qwen' not in tokenizer.__class__.__name__:
-            chat = tokenizer.apply_chat_template(
-                chat, tokenize=False, add_generation_prompt=assistant_message is None
-            )
+            if 'Qwen' not in tokenizer.__class__.__name__:
+                chat = tokenizer.apply_chat_template(
+                    chat, tokenize=False, add_generation_prompt=assistant_message is None
+                )
+            else:
+                chat = tokenizer.apply_chat_template(
+                    chat, tokenize=False, add_generation_prompt=assistant_message is None, enable_thinking=False
+                )
+
         else:
-            chat = tokenizer.apply_chat_template(
-                chat, tokenize=False, add_generation_prompt=assistant_message is None, enable_thinking=False
-            )
-
+            chat = system_instruction + "\n" + user_instruction + "\n"
+            if assistant_message is not None:
+                chat += assistant_message
+            else:
+                chat += "Response:"
+        sep_sequence = "Input:\n"
     else:
-        chat = system_instruction + "\n" + user_instruction + "\n"
+        chat = system_instruction + user_instruction
         if assistant_message is not None:
+            assistant_message += tokenizer.eos_token
             chat += assistant_message
-        else:
-            chat += "Response:"
-    sep_sequence = "Input:\n"
-    # else:
-    #     chat = system_instruction + user_instruction
-    #     if assistant_message is not None:
-    #         assistant_message += tokenizer.eos_token
-    #         chat += assistant_message
-    #     sep_sequence = "[MARK] [INPT][COLN]" # Qwen uses a different separator
+        sep_sequence = "[MARK] [INPT][COLN]" # Qwen uses a different separator
     
     sep_sequence_start = chat.find(sep_sequence)
     assert sep_sequence_start != -1, (
